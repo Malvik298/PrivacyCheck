@@ -161,6 +161,7 @@ class Utilities {
 
             override fun onResponse(call: Call, response: Response) {
                 val body =  JSONObject(response.body?.string().toString())
+
 //                Log.d("Response received", "${body")
                 if(response.code == 200){
                     val privacyDetails = body.getJSONArray("Privacy_Analysis")
@@ -173,13 +174,15 @@ class Utilities {
                     showPrivacyNotification(context, queryParam, overall_score.toString(), pendingIntent )
                 } else
                 {
+
+                    Log.d("Response received", "Policy Not Found")
                     val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                     val notification = NotificationCompat.Builder(context, "Privacy_analysis")
                         .setContentTitle("Policy Analysis")
                         .setContentText("Policy Not Found on PlayStore")
                         .setSmallIcon(R.drawable.ic_launcher_background)
                         .build()
-                    notificationManager.notify(Random.nextInt(100000), notification)
+                    notificationManager.notify(Random.nextInt(10000000), notification)
                 }
 
             }

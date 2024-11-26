@@ -26,11 +26,12 @@ class PrivacyItemAdapter(context: Context, items: List<PrivacyItem>) :
         summaryTextView.text = item?.summary
         scoreTextView.text = item?.rating
 
+
         // Set category text color based on rating
         val value = when (item?.rating) {
             "Worst" -> categoryTextView.setTextColor(Color.RED)
-            "Bad" -> categoryTextView.setTextColor(Color.parseColor("#FFA500"))
-            "Good" -> categoryTextView.setTextColor(Color.GREEN)
+            "Good" -> categoryTextView.setTextColor(Color.parseColor("#FFA500"))
+            "Best" -> categoryTextView.setTextColor(Color.GREEN)
             else -> categoryTextView.setTextColor(Color.BLACK) // Default color
         }
         return view
