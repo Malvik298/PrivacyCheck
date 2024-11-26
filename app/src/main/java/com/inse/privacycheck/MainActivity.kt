@@ -55,7 +55,9 @@ class MainActivity : AppCompatActivity() {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(channelId, "New App Installations", NotificationManager.IMPORTANCE_DEFAULT)
+            val channel2 = NotificationChannel("Privacy_analysis", "Privacy Analysis", NotificationManager.IMPORTANCE_DEFAULT)
             notificationManager.createNotificationChannel(channel)
+            notificationManager.createNotificationChannel(channel2)
         }
 //
         val startServ = findViewById<Button>(R.id.startSrv)

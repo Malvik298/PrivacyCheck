@@ -1,14 +1,21 @@
 package com.inse.privacycheck
 
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
+//import androidx.privacysandbox.tools.core.generator.build
+import okhttp3.*;
+import okio.IOException
+import org.json.JSONObject
 import java.io.File
 import java.security.MessageDigest
+import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 
 class Utilities {
 
@@ -22,14 +29,7 @@ class Utilities {
         val mainIntent = Intent(Intent.ACTION_MAIN, null)
         mainIntent.addCategory(Intent.CATEGORY_LAUNCHER)
 
-//        val resolvedInfos = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-//            pm.queryIntentActivities(
-//                mainIntent,
-//                PackageManager.ResolveInfoFlags.of(0L)
-//            )
-//        } else {
-//            pm.queryIntentActivities(mainIntent, 0)
-//        }
+
 
 
         val packageNames = packageManager.getInstalledPackages(PackageManager.GET_META_DATA)
@@ -37,7 +37,7 @@ class Utilities {
             .sorted()
 //        Log.d("AppInstallationWorker", "pNames: ${resolvedInfos.size}")
 
-        Log.d("AppInstallationWorker", "Saving package names: ${packageNames.size}")
+//        Log.d("AppInstallationWorker", "Saving package names: ${packageNames.size}")
         val file = File(context.filesDir, "package_names.txt")
         file.writeText(packageNames.joinToString("\n"))
 
@@ -70,22 +70,25 @@ class Utilities {
             .map { it.packageName }
             .sorted()
 
-        Log.d("AppInstallationWorker", "Current package Size: ${currentPackageNames.size}")
+//        Log.d("AppInstallationWorker", "Current package Size: ${currentPackageNames.size}")
         val storedHash = getStoredHash(context)
         val currentHash = calculateHash(currentPackageNames)
-        Log.d("AppInstallationWorker", "Stored Hash: $storedHash, Current Hash: $currentHash")
+//        Log.d("AppInstallationWorker", "Stored Hash: $storedHash, Current Hash: $currentHash")
         if (storedHash != currentHash) {
             val oldPackageNames = getStoredPackageNames(context)
             // Changes detected, find new apps
-            Log.d("AppInstallationWorker", "Old package Size: ${oldPackageNames.size}")
+//            Log.d("AppInstallationWorker", "Old package Size: ${oldPackageNames.size}")
             newApps = currentPackageNames.minus(oldPackageNames)
-            Log.d("AppInstallationWorker", "New package: ${newApps}")
+//            Log.d("AppInstallationWorker", "New package: ${newApps}")
             // Update stored data and hash
             if(newApps.size != 0){
                 showNotification(context, newApps.joinToString(", "))
             }
             savePackageNamesToFile(context)
-
+            for(appName in newApps)
+            {
+                callAPI(appName, context)
+            }
             // Send notification for new apps
             return newApps
         }
@@ -96,9 +99,8 @@ class Utilities {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val channelId = "New_App_Installations"
 
-        // Create the notification channel (for Android Oreo and above)
 
-        Log.d("AppInstallationWorker", "New package installed: $packageName")
+
         // Create the notification
         val notification = NotificationCompat.Builder(context, channelId)
             .setContentTitle("New App Installed")
@@ -110,6 +112,23 @@ class Utilities {
         notificationManager.notify(1, notification)
     }
 
+    private fun showPrivacyNotification(context: Context, packageName: String, text: String, pendingIntent: PendingIntent) {
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channelId = "Privacy_analysis"
+        Log.d("Notification P", "Notification sent Privacy")
+
+
+        val notification = NotificationCompat.Builder(context, channelId)
+            .setContentTitle("Policy Analysis")
+            .setContentText("Rating Overall for $packageName: $text")
+            .setSmallIcon(R.drawable.ic_launcher_background)
+            .setContentIntent(pendingIntent)
+            .build()
+        var random = Random.nextInt(1000000000)
+        // Show the notification
+        notificationManager.notify(random, notification)
+    }
+
     private fun getStoredHash(context: Context): String {
         val sharedPreferences = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         return sharedPreferences.getString("package_hash", "") ?: ""
@@ -119,4 +138,53 @@ class Utilities {
         val file = File(context.filesDir, "package_names.txt")
         return if (file.exists()) file.readLines() else emptyList()
     }
+
+    fun callAPI(queryParam: String, context: Context) {
+        val client = OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(0, TimeUnit.SECONDS)
+            .writeTimeout(0, TimeUnit.SECONDS)
+            .callTimeout(0, TimeUnit.SECONDS)
+            .build()
+
+
+        val request = Request.Builder()
+            .url("https://nn.i.spectresudo.com/webhook/app-request?app=${queryParam}")
+            .build()
+
+
+        client.newCall(request).enqueue(object: Callback{
+            override fun onFailure(call: Call, e: IOException) {
+                Log.d("API", "Failed, ${e.toString()}")
+
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val body =  JSONObject(response.body?.string().toString())
+//                Log.d("Response received", "${body")
+                if(response.code == 200){
+                    val privacyDetails = body.getJSONArray("Privacy_Analysis")
+                    val overall_score = body.get("overall_score")
+                    val intent = Intent(context, PrivacyDetailsActivity::class.java)
+                    intent.putExtra("privacyDetails", privacyDetails.toString())
+                    Log.d("Response Score Received ",overall_score.toString())
+                    Log.d("Response Privacy Received ",privacyDetails.toString())
+                    val pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+                    showPrivacyNotification(context, queryParam, overall_score.toString(), pendingIntent )
+                } else
+                {
+                    val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                    val notification = NotificationCompat.Builder(context, "Privacy_analysis")
+                        .setContentTitle("Policy Analysis")
+                        .setContentText("Policy Not Found on PlayStore")
+                        .setSmallIcon(R.drawable.ic_launcher_background)
+                        .build()
+                    notificationManager.notify(Random.nextInt(100000), notification)
+                }
+
+            }
+        })
+
+    }
+
 }
