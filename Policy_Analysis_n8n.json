@@ -1,0 +1,327 @@
+{
+  "name": "Policy Analysis copy",
+  "nodes": [
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.text.substring(8,) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "01c1e589-7523-4b6a-bdd7-ca140a5e3024",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://play.google.com/store/apps/datasafety?id={{ $json.query.app }}",
+        "options": {}
+      },
+      "id": "a4993aa5-64d9-4252-aab9-eb154776784b",
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -580,
+        840
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "a",
+              "cssSelector": ".GO2pB",
+              "returnValue": "attribute",
+              "attribute": "href",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {
+          "trimValues": true,
+          "cleanUpText": true
+        }
+      },
+      "id": "8da4325c-193f-4910-9656-f8334b0efa4a",
+      "name": "HTML",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        -380,
+        620
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.a[1] }}",
+        "options": {}
+      },
+      "id": "71bf508d-a3ec-49db-91f1-2006a62abe45",
+      "name": "HTTP Request1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        160,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "html": "={{ $json.data }}",
+        "options": {}
+      },
+      "id": "f3ea0193-4147-4fa9-b39a-628a55a539dd",
+      "name": "Markdown",
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        420,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash",
+        "options": {}
+      },
+      "id": "52b0b6cd-4947-4ba4-86e9-b1ec591d2eef",
+      "name": "Google Gemini Chat Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        660,
+        700
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "TXnegGHgp9PWPIps",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "mistral:latest",
+        "options": {}
+      },
+      "id": "2fbfc5b8-ee88-4d3b-b77d-fb0857573840",
+      "name": "Ollama Model",
+      "type": "@n8n/n8n-nodes-langchain.lmOllama",
+      "typeVersion": 1,
+      "position": [
+        860,
+        700
+      ],
+      "credentials": {
+        "ollamaApi": {
+          "id": "pZMemKm7RftRxWs6",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=I will give you data practice categories with its explanation and Conditions for labels. The annotations are to the app’s privacy policy. \n\nCategories are as follow:\n1.Collect Personal Information: Collect data subjects’ information which can identify their personal IDs. \n2.Data Retention Period: Retention period of personal information. \n3.Data Processing Purposes: The purposes of processing personal data. \n4.Contact Details: The contact details of the controller or the Data Protection Officer. \n5.Right to Access: The right (of the data subject) to request from the controller to access their personal information. \n6.Right to Rectify or Erase: The right (of the data subject) to request from the controller to rectify or erase of their personal information. \n7.Right to Restrict of Processing: The right (of the data subject) to request from the controller to restrict processing concerning the data subject. \n8.Right to Object to Processing: The right (of the data subject) to request from the controller to object to processing. \n9.Right to Data Portability: The right (of the data subject) to receive and transmit his/her personal data to another controller. \n10.Right to Lodge a Complaint: The right (of the data subject) to lodge a complaint with a supervisory authority. \n\nConditions for the Label are as follow:\n\n1. Collect Personal Information\nBest: The app collects minimal, non-sensitive personal data (e.g., email for login) and explains why each piece of data is needed.\nGood: The app collects moderate data, including some sensitive information (e.g., name, phone number) but provides a clear and necessary justification.\nWorst: The app collects excessive personal information (e.g., phone number, location, contacts) or sensitive data without a clear reason.\n\n2. Data Retention Period\nBest: The app retains data between 0 and 4 months.\nGood: The app retains data longer them 4 months but less then 12 months\nWorst: Data is retained more then 12 months or no clear explanation of how long your data is kept.\n\n3. Data Processing Purposes\nBest: Data is processed only to improve the app’s functionality or provide requested services. No processing for ads or third-party sharing.\nGood: Data is processed for improving services and some marketing purposes, but with clear user control (e.g., opt-out options).\nWorst: Data is processed for unclear or unnecessary purposes, such as targeted ads, third-party sales, or profiling.\n\n4. Contact Details\nBest: Clear, easy-to-find contact details (email, phone, or in-app support) for privacy-related queries, with quick response promises.\nGood: Only one contact method is available.\nWorst: No clear or functional contact method for privacy concerns.\n\n5. Right to Access\nBest: Provides an easy way to view what personal data the app has collected.\nGood: Mentions the right to access but lacks clarity on how to use it.\nWorst: No mention of your right to see what data the app holds.\n\n6. Right to Rectify or Erase\nBest: Allows you to edit or delete your data easily through the app settings and the related settings are mentioned.\nGood: Deletion or correction is possible, but the process is complicated or requires contacting support.\nWorst: No option to edit or delete your data.\n\n7. Right to Restrict Processing\nBest: Provides options to restrict certain data uses, such as turning off location tracking or opting out of targeted ads.\nGood: Mentions this right but doesn’t give clear steps to restrict processing.\nWorst: No way to restrict data processing.\n\n8. Right to Object to Processing\nBest: Allows you to easily opt out of activities like direct marketing or personalized ads.\nGood: Provides a general mention of this right but lacks actionable steps.\nWorst: No mention of or way to object to processing.\n\n9. Right to Data Portability\nBest: Lets you download your data in a usable format (e.g., CSV) to transfer to another service.\nGood: Mentions this right but lacks details or doesn’t make it user-friendly.\nWorst: No mention of data portability.\n\n10. Right to Lodge a Complaint\nBest: Provides clear details of where to file complaints (e.g., regulatory authority) and encourages addressing concerns with the app first.\nGood: Mentions complaint rights but lacks details about regulatory authorities.\nWorst: No mention of the right to complain or an unclear process.\n\nFor the input data, please find All the data corrosponding to all these 10 categories. And give me information related to each category. Summarize the data given for each category and then give rating to each category as \"Best\", \"Good\" or \"Worst\" on the basis of given Conditions. Respond in JSON format, and a overall average score rating out of 10 for all categories combined.. as a new key. Use Privacy Analysis as key for general. Do not use the org name. Follow this format. \n\\{\n  \"Privacy_Analysis\":[<Privacy Details here],\n\"overall_score\":<score Here>\n\\}\n{{ $json.data }}"
+      },
+      "id": "7dc7c423-5ecb-421d-aa21-9e8ba0ec58ec",
+      "name": "Basic LLM Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        660,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "path": "app-request",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "21f92284-7053-4db5-81f5-87a3c6211792",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -880,
+        640
+      ],
+      "webhookId": "12f74b9d-5982-4564-93a6-0136bab0a320"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ee8b4caa-5bae-415d-96bc-59eca2b4990d",
+              "leftValue": "={{  $json.a.length }}",
+              "rightValue": 2,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -80,
+        800
+      ],
+      "id": "79234a35-5744-4f3d-b468-42e596cd6f75",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Privacy Policy Not Found",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "404"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        160,
+        940
+      ],
+      "id": "c3db0efe-0148-4e61-89cb-fe38677366bc",
+      "name": "Respond to Webhook1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "18424ebb-af49-479e-91af-63a7a3d684e6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "793ba7890ef4f2bb6b20ba62502c258438ce27c1b94c54c085bc7f97d32015de"
+  },
+  "id": "I4WMDMnoejTrCQFR",
+  "tags": []
+}
