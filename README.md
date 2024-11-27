@@ -25,3 +25,5 @@ The Workflow automation can be found in the file [Privacy_Analysis_n8n.json](./P
 
 ![Screenshot 2024-11-26 024506](https://github.com/user-attachments/assets/aa40adf0-cf18-43dd-b93a-5b0314f6548e)
 
+Find out the video demo in Demo folder
+
